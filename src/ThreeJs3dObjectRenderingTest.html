@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Rotating a Cube</title>
+</head>
+
+<body>
+    <script src="js/three.js"></script>
+    <script>
+        var camera, scene, renderer, geometry, material, mesh;
+        init();
+        animate();
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 10000);
+            camera.position.z = 500;
+            scene.add(camera);
+
+
+            geometry1 = new THREE.CubeGeometry(200, 200, 200);
+            material1 = new THREE.MeshNormalMaterial({ opacity:0.2,transparent: true, });
+            mesh1 = new THREE.Mesh(geometry1, material1);
+            scene.add(mesh1);
+            geometry2 = new THREE.CubeGeometry(200, 200, 200);
+            material2 = new THREE.MeshNormalMaterial({ opacity:0.2,transparent: true, });
+            mesh2 = new THREE.Mesh(geometry2, material2);
+            scene.add(mesh2);
+
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+        }
+        function animate() {
+            requestAnimationFrame(animate);
+            render();
+        }
+        function render() {
+            mesh1.rotation.x += 0.01;
+            mesh1.rotation.y += 0.02;
+
+            mesh2.rotation.x += 0.03;
+            mesh2.rotation.y += 0.05;
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+
+</html>
