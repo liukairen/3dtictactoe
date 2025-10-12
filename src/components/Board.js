@@ -21,8 +21,10 @@ export class Board {
     }
   }
 
-  init(scene) {
+  init(scene, options = {}) {
     this.scene = scene;
+    this.isMobile = options.isMobile || false;
+    this.isLowEndDevice = options.isLowEndDevice || false;
     this.createBoard();
   }
 
@@ -61,6 +63,12 @@ export class Board {
 
     const mesh = new THREE.Mesh(geometry, material);
 
+    // Disable shadows for mobile devices
+    if (this.isMobile && this.isLowEndDevice) {
+      mesh.castShadow = false;
+      mesh.receiveShadow = false;
+    }
+
     // Position the cell
     const offset = (this.gridSize - 1) / 2;
     mesh.position.set(
@@ -94,13 +102,21 @@ export class Board {
   }
 
   createPiece(cell, player) {
-    const geometry = new THREE.SphereGeometry(0.3, 16, 16);
+    // Use lower geometry complexity for mobile devices
+    const segments = this.isLowEndDevice ? 8 : 16;
+    const geometry = new THREE.SphereGeometry(0.3, segments, segments);
     const material = new THREE.MeshLambertMaterial({
       color: player === "X" ? 0xff4444 : 0x4444ff,
       emissive: player === "X" ? 0x220000 : 0x000022,
     });
 
     const piece = new THREE.Mesh(geometry, material);
+
+    // Disable shadows for mobile devices
+    if (this.isMobile && this.isLowEndDevice) {
+      piece.castShadow = false;
+      piece.receiveShadow = false;
+    }
 
     // Position the piece
     const offset = (this.gridSize - 1) / 2;

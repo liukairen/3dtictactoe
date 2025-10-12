@@ -28,6 +28,18 @@ export class Game {
     this.wasDragging = false;
     this.dragThreshold = 5; // pixels
 
+    // Touch control variables
+    this.touchDown = false;
+    this.lastTouchDistance = 0;
+    this.isPinching = false;
+    this.lastTouchCenter = { x: 0, y: 0 };
+    this.touchStartTime = 0;
+    this.touchThreshold = 300; // ms for tap detection
+
+    // Mobile device detection and performance settings
+    this.isMobile = this.detectMobile();
+    this.isLowEndDevice = this.detectLowEndDevice();
+
     // Inversion settings
     this.invertHorizontal = false;
     this.invertVertical = false;
@@ -39,6 +51,33 @@ export class Game {
     this.loadSettings();
     this.init();
     this.animate();
+  }
+
+  detectMobile() {
+    return (
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      ) ||
+      (navigator.maxTouchPoints && navigator.maxTouchPoints > 2)
+    );
+  }
+
+  detectLowEndDevice() {
+    // Simple heuristic for low-end devices
+    const canvas = document.createElement("canvas");
+    const gl =
+      canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+
+    if (!gl) return true;
+
+    const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+    if (debugInfo) {
+      const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+      // Check for known low-end GPU indicators
+      return /Intel.*HD|Mali|Adreno.*3|PowerVR.*SGX/i.test(renderer);
+    }
+
+    return false;
   }
 
   loadSettings() {
@@ -77,11 +116,29 @@ export class Game {
   }
 
   init() {
-    // Setup renderer
+    // Setup renderer with mobile optimizations
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setClearColor(0x87ceeb); // Sky blue
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    // Mobile performance optimizations
+    if (this.isMobile || this.isLowEndDevice) {
+      // Reduce shadow quality for mobile
+      this.renderer.shadowMap.enabled = true;
+      this.renderer.shadowMap.type = THREE.BasicShadowMap; // Faster than PCFSoftShadowMap
+      this.renderer.shadowMap.autoUpdate = false; // Manual shadow updates for better performance
+
+      // Reduce pixel ratio for better performance
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+      // Enable power preference for mobile
+      this.renderer.powerPreference = "low-power";
+    } else {
+      // Full quality for desktop
+      this.renderer.shadowMap.enabled = true;
+      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      this.renderer.setPixelRatio(window.devicePixelRatio);
+    }
+
     document.body.appendChild(this.renderer.domElement);
 
     // Setup camera
@@ -90,23 +147,33 @@ export class Game {
     // Setup camera controls
     this.setupCameraControls();
 
-    // Add lighting
+    // Add lighting with mobile optimizations
     const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
     this.scene.add(ambientLight);
 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(10, 10, 5);
-    directionalLight.castShadow = true;
+
+    // Only enable shadows on non-mobile devices or high-end mobile
+    if (!this.isMobile || !this.isLowEndDevice) {
+      directionalLight.castShadow = true;
+    }
+
     this.scene.add(directionalLight);
 
-    // Initialize board
-    this.board.init(this.scene);
+    // Initialize board with mobile optimization settings
+    this.board.init(this.scene, {
+      isMobile: this.isMobile,
+      isLowEndDevice: this.isLowEndDevice,
+    });
 
     // Setup click detection
     this.setupClickDetection();
 
-    // Setup hover detection
-    this.setupHoverDetection();
+    // Setup hover detection (only for desktop)
+    if (!this.isMobile) {
+      this.setupHoverDetection();
+    }
 
     this.updateUI();
   }
@@ -175,6 +242,152 @@ export class Game {
       this.cameraDistance = Math.max(3, Math.min(15, this.cameraDistance));
       this.updateCameraPosition();
     });
+
+    // Touch events for mobile
+    this.setupTouchControls(canvas);
+  }
+
+  setupTouchControls(canvas) {
+    // Touch start
+    canvas.addEventListener("touchstart", (event) => {
+      event.preventDefault();
+      this.touchStartTime = Date.now();
+
+      if (event.touches.length === 1) {
+        // Single touch - camera rotation
+        this.touchDown = true;
+        this.mouseX = event.touches[0].clientX;
+        this.mouseY = event.touches[0].clientY;
+        this.wasDragging = false;
+      } else if (event.touches.length === 2) {
+        // Two touches - pinch to zoom
+        this.isPinching = true;
+        this.touchDown = false;
+        const touch1 = event.touches[0];
+        const touch2 = event.touches[1];
+
+        this.lastTouchDistance = Math.sqrt(
+          Math.pow(touch2.clientX - touch1.clientX, 2) +
+            Math.pow(touch2.clientY - touch1.clientY, 2)
+        );
+
+        // Calculate center point
+        this.lastTouchCenter = {
+          x: (touch1.clientX + touch2.clientX) / 2,
+          y: (touch1.clientY + touch2.clientY) / 2,
+        };
+      }
+    });
+
+    // Touch move
+    canvas.addEventListener("touchmove", (event) => {
+      event.preventDefault();
+
+      if (event.touches.length === 1 && this.touchDown && !this.isPinching) {
+        // Single touch drag - camera rotation
+        const deltaX = event.touches[0].clientX - this.mouseX;
+        const deltaY = event.touches[0].clientY - this.mouseY;
+
+        // Check if we've moved enough to consider it a drag
+        const totalMovement = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        if (totalMovement > this.dragThreshold) {
+          this.wasDragging = true;
+        }
+
+        // Apply inversion settings
+        const horizontalDelta = this.invertHorizontal ? -deltaX : deltaX;
+        const verticalDelta = this.invertVertical ? -deltaY : deltaY;
+
+        this.cameraAngleY += horizontalDelta * 0.01;
+        this.cameraAngleX += verticalDelta * 0.01;
+
+        // Limit vertical rotation
+        this.cameraAngleX = Math.max(
+          -Math.PI / 2,
+          Math.min(Math.PI / 2, this.cameraAngleX)
+        );
+
+        this.mouseX = event.touches[0].clientX;
+        this.mouseY = event.touches[0].clientY;
+
+        this.updateCameraPosition();
+      } else if (event.touches.length === 2 && this.isPinching) {
+        // Two touches - pinch to zoom
+        const touch1 = event.touches[0];
+        const touch2 = event.touches[1];
+
+        const currentDistance = Math.sqrt(
+          Math.pow(touch2.clientX - touch1.clientX, 2) +
+            Math.pow(touch2.clientY - touch1.clientY, 2)
+        );
+
+        const distanceChange = currentDistance - this.lastTouchDistance;
+        const zoomFactor = distanceChange * 0.01;
+
+        this.cameraDistance -= zoomFactor;
+        this.cameraDistance = Math.max(3, Math.min(15, this.cameraDistance));
+
+        this.lastTouchDistance = currentDistance;
+        this.updateCameraPosition();
+      }
+    });
+
+    // Touch end
+    canvas.addEventListener("touchend", (event) => {
+      event.preventDefault();
+
+      // Handle tap for cell selection
+      if (
+        event.changedTouches.length === 1 &&
+        !this.wasDragging &&
+        !this.isPinching
+      ) {
+        const touchDuration = Date.now() - this.touchStartTime;
+
+        if (
+          touchDuration < this.touchThreshold &&
+          this.gameStatus === "playing"
+        ) {
+          // This is a tap, handle cell selection
+          const touch = event.changedTouches[0];
+          this.handleTouchCellSelection(touch.clientX, touch.clientY);
+        }
+      }
+
+      this.touchDown = false;
+      this.isPinching = false;
+
+      // Reset drag flag after a short delay
+      if (this.wasDragging) {
+        setTimeout(() => {
+          this.wasDragging = false;
+        }, 100);
+      }
+    });
+  }
+
+  handleTouchCellSelection(clientX, clientY) {
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    // Calculate touch position in normalized device coordinates
+    mouse.x = (clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+
+    // Update the picking ray with the camera and touch position
+    raycaster.setFromCamera(mouse, this.camera);
+
+    // Calculate objects intersecting the picking ray
+    const intersects = raycaster.intersectObjects(
+      this.board.getClickableObjects()
+    );
+
+    if (intersects.length > 0) {
+      const cell = intersects[0].object.userData.cell;
+      if (cell && this.board.isCellEmpty(cell)) {
+        this.makeMove(cell);
+      }
+    }
   }
 
   updateCameraPosition() {
