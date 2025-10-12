@@ -25,10 +25,16 @@ export class Game {
     this.cameraDistance = 8;
     this.cameraAngleX = 0.3;
     this.cameraAngleY = 0.5;
+    this.wasDragging = false;
+    this.dragThreshold = 5; // pixels
 
     // Inversion settings
     this.invertHorizontal = false;
     this.invertVertical = false;
+
+    // Hover highlighting
+    this.hoveredCell = null;
+    this.originalMaterials = new Map();
 
     this.loadSettings();
     this.init();
@@ -99,6 +105,9 @@ export class Game {
     // Setup click detection
     this.setupClickDetection();
 
+    // Setup hover detection
+    this.setupHoverDetection();
+
     this.updateUI();
   }
 
@@ -110,6 +119,7 @@ export class Game {
       this.mouseDown = true;
       this.mouseX = event.clientX;
       this.mouseY = event.clientY;
+      this.wasDragging = false;
       canvas.style.cursor = "grabbing";
     });
 
@@ -117,6 +127,13 @@ export class Game {
     canvas.addEventListener("mouseup", () => {
       this.mouseDown = false;
       canvas.style.cursor = "pointer";
+
+      // Reset drag flag after a short delay to allow clicks again
+      if (this.wasDragging) {
+        setTimeout(() => {
+          this.wasDragging = false;
+        }, 100);
+      }
     });
 
     // Mouse move
@@ -125,6 +142,12 @@ export class Game {
 
       const deltaX = event.clientX - this.mouseX;
       const deltaY = event.clientY - this.mouseY;
+
+      // Check if we've moved enough to consider it a drag
+      const totalMovement = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      if (totalMovement > this.dragThreshold) {
+        this.wasDragging = true;
+      }
 
       // Apply inversion settings
       const horizontalDelta = this.invertHorizontal ? -deltaX : deltaX;
@@ -169,13 +192,73 @@ export class Game {
     this.camera.lookAt(0, 0, 0);
   }
 
+  setupHoverDetection() {
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    this.renderer.domElement.addEventListener("mousemove", (event) => {
+      // Don't process hover if mouse is down (dragging camera)
+      if (this.mouseDown) return;
+
+      // Calculate mouse position in normalized device coordinates
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      // Update the picking ray with the camera and mouse position
+      raycaster.setFromCamera(mouse, this.camera);
+
+      // Calculate objects intersecting the picking ray
+      const intersects = raycaster.intersectObjects(
+        this.board.getClickableObjects()
+      );
+
+      // Reset previous hover
+      this.resetHover();
+
+      // Set new hover if found
+      if (intersects.length > 0) {
+        const cell = intersects[0].object.userData.cell;
+        if (cell && this.board.isCellEmpty(cell)) {
+          this.setHover(intersects[0].object);
+        }
+      }
+    });
+  }
+
+  setHover(object) {
+    // Store reference to hovered cell
+    this.hoveredCell = object;
+
+    // Store original material
+    this.originalMaterials.set(object, object.material);
+
+    // Create highlight material
+    const highlightMaterial = new THREE.MeshLambertMaterial({
+      color: 0xffff00, // Bright yellow
+      transparent: true,
+      opacity: 0.7,
+    });
+
+    // Apply highlight material
+    object.material = highlightMaterial;
+  }
+
+  resetHover() {
+    if (this.hoveredCell && this.originalMaterials.has(this.hoveredCell)) {
+      // Restore original material
+      this.hoveredCell.material = this.originalMaterials.get(this.hoveredCell);
+      this.originalMaterials.delete(this.hoveredCell);
+    }
+    this.hoveredCell = null;
+  }
+
   setupClickDetection() {
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
     this.renderer.domElement.addEventListener("click", (event) => {
       // Only handle clicks if mouse wasn't dragged (camera control)
-      if (this.gameStatus !== "playing") return;
+      if (this.gameStatus !== "playing" || this.wasDragging) return;
 
       // Calculate mouse position in normalized device coordinates
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -237,6 +320,7 @@ export class Game {
   reset() {
     this.currentPlayer = "X";
     this.gameStatus = "playing";
+    this.resetHover(); // Clear any hover highlighting
     this.board.reset();
     this.updateUI();
   }
