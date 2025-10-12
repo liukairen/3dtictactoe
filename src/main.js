@@ -25,7 +25,7 @@ document.getElementById("togglePanelBtn").addEventListener("click", () => {
     localStorage.setItem("3dtictactoe_panelHidden", "false");
   } else {
     gameInfo.classList.add("hidden");
-    toggleBtn.textContent = "☰";
+    toggleBtn.textContent = "→"; // Arrow pointing right to indicate panel can be shown
     localStorage.setItem("3dtictactoe_panelHidden", "true");
   }
 });
@@ -65,5 +65,6 @@ window.addEventListener("load", () => {
   // Load panel visibility preference
   if (savedPanelHidden === "true") {
     document.getElementById("gameInfo").classList.add("hidden");
+    document.getElementById("togglePanelBtn").textContent = "→";
   }
 });
