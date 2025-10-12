@@ -7,6 +7,7 @@ yarn-error.log*
 # Build outputs
 dist/
 build/
+docs/
 *.tgz
 
 # Environment variables
@@ -86,7 +87,7 @@ dist
 
 # Gatsby files
 .cache/
-public
+# public - removed from ignore list to allow publishing
 
 # Storybook build outputs
 .out
