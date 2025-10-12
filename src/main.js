@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { Game } from "./src/components/Game.js";
+import { Game } from "./components/Game.js";
 
 // Initialize the game
 const game = new Game();
