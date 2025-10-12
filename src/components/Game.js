@@ -183,6 +183,7 @@ export class Game {
 
     // Mouse down
     canvas.addEventListener("mousedown", (event) => {
+      if (this.cameraControlsDisabled) return;
       this.mouseDown = true;
       this.mouseX = event.clientX;
       this.mouseY = event.clientY;
@@ -205,7 +206,7 @@ export class Game {
 
     // Mouse move
     canvas.addEventListener("mousemove", (event) => {
-      if (!this.mouseDown) return;
+      if (!this.mouseDown || this.cameraControlsDisabled) return;
 
       const deltaX = event.clientX - this.mouseX;
       const deltaY = event.clientY - this.mouseY;
@@ -237,6 +238,7 @@ export class Game {
 
     // Mouse wheel for zoom
     canvas.addEventListener("wheel", (event) => {
+      if (this.cameraControlsDisabled) return;
       event.preventDefault();
       this.cameraDistance += event.deltaY * 0.01;
       this.cameraDistance = Math.max(3, Math.min(15, this.cameraDistance));
@@ -251,6 +253,7 @@ export class Game {
     // Touch start
     canvas.addEventListener("touchstart", (event) => {
       event.preventDefault();
+      if (this.cameraControlsDisabled) return;
       this.touchStartTime = Date.now();
 
       if (event.touches.length === 1) {
@@ -282,6 +285,7 @@ export class Game {
     // Touch move
     canvas.addEventListener("touchmove", (event) => {
       event.preventDefault();
+      if (this.cameraControlsDisabled) return;
 
       if (event.touches.length === 1 && this.touchDown && !this.isPinching) {
         // Single touch drag - camera rotation
@@ -502,6 +506,7 @@ export class Game {
     if (this.board.checkWin(cell, this.currentPlayer)) {
       this.gameStatus = "won";
       this.updateUI();
+      this.showCongratulations();
       return;
     }
 
@@ -530,11 +535,36 @@ export class Game {
     document.getElementById("gameStatus").textContent = statusText;
   }
 
+  showCongratulations() {
+    const modal = document.getElementById("congratulationsModal");
+    const winnerMessage = document.getElementById("winnerMessage");
+
+    // Update the winner message
+    winnerMessage.textContent = `Player ${this.currentPlayer} Wins!`;
+
+    // Show the modal
+    modal.classList.remove("hidden");
+
+    // Add some extra celebration by temporarily disabling camera controls
+    this.cameraControlsDisabled = true;
+
+    // Re-enable camera controls after a delay
+    setTimeout(() => {
+      this.cameraControlsDisabled = false;
+    }, 1000);
+  }
+
+  hideCongratulations() {
+    const modal = document.getElementById("congratulationsModal");
+    modal.classList.add("hidden");
+  }
+
   reset() {
     this.currentPlayer = "X";
     this.gameStatus = "playing";
     this.resetHover(); // Clear any hover highlighting
     this.board.reset();
+    this.hideCongratulations(); // Hide congratulations modal if open
     this.updateUI();
   }
 
