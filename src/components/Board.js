@@ -57,7 +57,7 @@ export class Board {
     const material = new THREE.MeshLambertMaterial({
       color: 0xf0f0f0,
       transparent: true,
-      opacity: 0.3,
+      opacity: 0.5,
     });
 
     const mesh = new THREE.Mesh(geometry, material);
@@ -77,66 +77,68 @@ export class Board {
   }
 
   createGridLines(group) {
-    const material = new THREE.LineBasicMaterial({ color: 0x333333 });
+    const material = new THREE.LineBasicMaterial({
+      color: 0x666666,
+      linewidth: 2,
+    });
     const offset = (this.gridSize - 1) / 2;
+    const halfCell = this.cellSize / 2;
 
-    // Create lines for each dimension
-    for (let i = 0; i <= this.gridSize; i++) {
-      // X-axis lines
+    // Create grid lines that align with cell boundaries
+    // X-axis lines (vertical lines)
+    for (let x = 0; x <= this.gridSize; x++) {
       for (let y = 0; y <= this.gridSize; y++) {
-        for (let z = 0; z <= this.gridSize; z++) {
-          const geometry = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(
-              -offset * this.cellSize,
-              (y - offset) * this.cellSize,
-              (z - offset) * this.cellSize
-            ),
-            new THREE.Vector3(
-              offset * this.cellSize,
-              (y - offset) * this.cellSize,
-              (z - offset) * this.cellSize
-            ),
-          ]);
-          group.add(new THREE.Line(geometry, material));
-        }
+        const geometry = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(
+            (x - offset) * this.cellSize,
+            (y - offset) * this.cellSize,
+            -offset * this.cellSize - halfCell
+          ),
+          new THREE.Vector3(
+            (x - offset) * this.cellSize,
+            (y - offset) * this.cellSize,
+            offset * this.cellSize + halfCell
+          ),
+        ]);
+        group.add(new THREE.Line(geometry, material));
       }
+    }
 
-      // Y-axis lines
-      for (let x = 0; x <= this.gridSize; x++) {
-        for (let z = 0; z <= this.gridSize; z++) {
-          const geometry = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(
-              (x - offset) * this.cellSize,
-              -offset * this.cellSize,
-              (z - offset) * this.cellSize
-            ),
-            new THREE.Vector3(
-              (x - offset) * this.cellSize,
-              offset * this.cellSize,
-              (z - offset) * this.cellSize
-            ),
-          ]);
-          group.add(new THREE.Line(geometry, material));
-        }
+    // Y-axis lines (horizontal lines)
+    for (let y = 0; y <= this.gridSize; y++) {
+      for (let z = 0; z <= this.gridSize; z++) {
+        const geometry = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(
+            -offset * this.cellSize - halfCell,
+            (y - offset) * this.cellSize,
+            (z - offset) * this.cellSize
+          ),
+          new THREE.Vector3(
+            offset * this.cellSize + halfCell,
+            (y - offset) * this.cellSize,
+            (z - offset) * this.cellSize
+          ),
+        ]);
+        group.add(new THREE.Line(geometry, material));
       }
+    }
 
-      // Z-axis lines
-      for (let x = 0; x <= this.gridSize; x++) {
-        for (let y = 0; y <= this.gridSize; y++) {
-          const geometry = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(
-              (x - offset) * this.cellSize,
-              (y - offset) * this.cellSize,
-              -offset * this.cellSize
-            ),
-            new THREE.Vector3(
-              (x - offset) * this.cellSize,
-              (y - offset) * this.cellSize,
-              offset * this.cellSize
-            ),
-          ]);
-          group.add(new THREE.Line(geometry, material));
-        }
+    // Z-axis lines (depth lines)
+    for (let x = 0; x <= this.gridSize; x++) {
+      for (let z = 0; z <= this.gridSize; z++) {
+        const geometry = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(
+            (x - offset) * this.cellSize,
+            -offset * this.cellSize - halfCell,
+            (z - offset) * this.cellSize
+          ),
+          new THREE.Vector3(
+            (x - offset) * this.cellSize,
+            offset * this.cellSize + halfCell,
+            (z - offset) * this.cellSize
+          ),
+        ]);
+        group.add(new THREE.Line(geometry, material));
       }
     }
   }
@@ -336,9 +338,6 @@ export class Board {
       }
     });
 
-    // Rotate the entire board slowly
-    if (this.boardGroup) {
-      this.boardGroup.rotation.y += 0.005;
-    }
+    // Removed automatic rotation - camera will be controlled manually
   }
 }

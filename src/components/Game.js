@@ -18,8 +18,56 @@ export class Game {
     this.board = new Board();
     this.player = new Player();
 
+    // Camera control variables
+    this.mouseDown = false;
+    this.mouseX = 0;
+    this.mouseY = 0;
+    this.cameraDistance = 8;
+    this.cameraAngleX = 0.3;
+    this.cameraAngleY = 0.5;
+
+    // Inversion settings
+    this.invertHorizontal = false;
+    this.invertVertical = false;
+
+    this.loadSettings();
     this.init();
     this.animate();
+  }
+
+  loadSettings() {
+    // Load inversion settings from localStorage
+    const savedInvertH = localStorage.getItem("3dtictactoe_invertHorizontal");
+    const savedInvertV = localStorage.getItem("3dtictactoe_invertVertical");
+
+    if (savedInvertH !== null) {
+      this.invertHorizontal = savedInvertH === "true";
+    }
+    if (savedInvertV !== null) {
+      this.invertVertical = savedInvertV === "true";
+    }
+  }
+
+  saveSettings() {
+    // Save inversion settings to localStorage
+    localStorage.setItem(
+      "3dtictactoe_invertHorizontal",
+      this.invertHorizontal.toString()
+    );
+    localStorage.setItem(
+      "3dtictactoe_invertVertical",
+      this.invertVertical.toString()
+    );
+  }
+
+  setInvertHorizontal(invert) {
+    this.invertHorizontal = invert;
+    this.saveSettings();
+  }
+
+  setInvertVertical(invert) {
+    this.invertVertical = invert;
+    this.saveSettings();
   }
 
   init() {
@@ -31,8 +79,10 @@ export class Game {
     document.body.appendChild(this.renderer.domElement);
 
     // Setup camera
-    this.camera.position.set(5, 5, 8);
-    this.camera.lookAt(0, 0, 0);
+    this.updateCameraPosition();
+
+    // Setup camera controls
+    this.setupCameraControls();
 
     // Add lighting
     const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
@@ -52,11 +102,79 @@ export class Game {
     this.updateUI();
   }
 
+  setupCameraControls() {
+    const canvas = this.renderer.domElement;
+
+    // Mouse down
+    canvas.addEventListener("mousedown", (event) => {
+      this.mouseDown = true;
+      this.mouseX = event.clientX;
+      this.mouseY = event.clientY;
+      canvas.style.cursor = "grabbing";
+    });
+
+    // Mouse up
+    canvas.addEventListener("mouseup", () => {
+      this.mouseDown = false;
+      canvas.style.cursor = "pointer";
+    });
+
+    // Mouse move
+    canvas.addEventListener("mousemove", (event) => {
+      if (!this.mouseDown) return;
+
+      const deltaX = event.clientX - this.mouseX;
+      const deltaY = event.clientY - this.mouseY;
+
+      // Apply inversion settings
+      const horizontalDelta = this.invertHorizontal ? -deltaX : deltaX;
+      const verticalDelta = this.invertVertical ? -deltaY : deltaY;
+
+      this.cameraAngleY += horizontalDelta * 0.01;
+      this.cameraAngleX += verticalDelta * 0.01;
+
+      // Limit vertical rotation
+      this.cameraAngleX = Math.max(
+        -Math.PI / 2,
+        Math.min(Math.PI / 2, this.cameraAngleX)
+      );
+
+      this.mouseX = event.clientX;
+      this.mouseY = event.clientY;
+
+      this.updateCameraPosition();
+    });
+
+    // Mouse wheel for zoom
+    canvas.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      this.cameraDistance += event.deltaY * 0.01;
+      this.cameraDistance = Math.max(3, Math.min(15, this.cameraDistance));
+      this.updateCameraPosition();
+    });
+  }
+
+  updateCameraPosition() {
+    const x =
+      Math.sin(this.cameraAngleY) *
+      Math.cos(this.cameraAngleX) *
+      this.cameraDistance;
+    const y = Math.sin(this.cameraAngleX) * this.cameraDistance;
+    const z =
+      Math.cos(this.cameraAngleY) *
+      Math.cos(this.cameraAngleX) *
+      this.cameraDistance;
+
+    this.camera.position.set(x, y, z);
+    this.camera.lookAt(0, 0, 0);
+  }
+
   setupClickDetection() {
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
     this.renderer.domElement.addEventListener("click", (event) => {
+      // Only handle clicks if mouse wasn't dragged (camera control)
       if (this.gameStatus !== "playing") return;
 
       // Calculate mouse position in normalized device coordinates

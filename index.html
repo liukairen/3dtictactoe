@@ -56,6 +56,33 @@
         <p>Player: <span id="currentPlayer">X</span></p>
         <p>Status: <span id="gameStatus">Your turn</span></p>
         <button id="resetBtn">Reset Game</button>
+
+        <div style="margin-top: 15px; font-size: 12px; opacity: 0.8">
+          <p><strong>Camera Settings:</strong></p>
+          <label style="display: flex; align-items: center; margin: 5px 0">
+            <input
+              type="checkbox"
+              id="invertHorizontal"
+              style="margin-right: 8px"
+            />
+            Invert Horizontal (Left/Right)
+          </label>
+          <label style="display: flex; align-items: center; margin: 5px 0">
+            <input
+              type="checkbox"
+              id="invertVertical"
+              style="margin-right: 8px"
+            />
+            Invert Vertical (Up/Down)
+          </label>
+        </div>
+
+        <div style="margin-top: 15px; font-size: 12px; opacity: 0.8">
+          <p><strong>Controls:</strong></p>
+          <p>• Click and drag to rotate camera</p>
+          <p>• Mouse wheel to zoom in/out</p>
+          <p>• Click on cells to place pieces</p>
+        </div>
       </div>
     </div>
 
