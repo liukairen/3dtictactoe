@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0"
+    />
+    <title>3D Tic-Tac-Toe</title>
+    <link rel="icon" type="image/x-icon" href="/3dtictactoe/favicon.ico" />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
+      }
+
+      canvas {
+        display: block;
+        cursor: pointer;
+      }
+
+      #ui {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        color: white;
+        z-index: 100;
+      }
+
+      #gameInfo {
+        background: rgba(0, 0, 0, 0.7);
+        padding: 15px;
+        border-radius: 10px;
+        backdrop-filter: blur(10px);
+      }
+
+      button {
+        background: #4caf50;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 10px;
+        font-size: 16px;
+      }
+
+      button:hover {
+        background: #45a049;
+      }
+
+      /* Mobile responsive styles */
+      @media (max-width: 768px) {
+        #ui {
+          top: 10px;
+          left: 10px;
+          right: 10px;
+        }
+
+        #gameInfo {
+          padding: 10px;
+          font-size: 14px;
+        }
+
+        #gameInfo h2 {
+          font-size: 18px;
+          margin: 5px 0;
+        }
+
+        #gameInfo p {
+          margin: 5px 0;
+          font-size: 12px;
+        }
+
+        button {
+          padding: 8px 16px;
+          font-size: 14px;
+          width: 100%;
+        }
+
+        #gameInfo label {
+          font-size: 11px !important;
+        }
+
+        #gameInfo input[type="checkbox"] {
+          transform: scale(0.8);
+        }
+
+        #gameInfo > div {
+          margin-top: 10px !important;
+        }
+
+        #gameInfo > div p {
+          font-size: 10px !important;
+          margin: 3px 0 !important;
+        }
+      }
+
+      @media (max-width: 480px) {
+        #ui {
+          top: 5px;
+          left: 5px;
+          right: 5px;
+        }
+
+        #gameInfo {
+          padding: 8px;
+          font-size: 12px;
+        }
+
+        #gameInfo h2 {
+          font-size: 16px;
+          margin: 3px 0;
+        }
+
+        #gameInfo p {
+          margin: 3px 0;
+          font-size: 11px;
+        }
+
+        button {
+          padding: 6px 12px;
+          font-size: 12px;
+        }
+
+        #gameInfo > div {
+          margin-top: 8px !important;
+        }
+
+        #gameInfo > div p {
+          font-size: 9px !important;
+          margin: 2px 0 !important;
+        }
+      }
+    </style>
+    <script type="module" crossorigin src="/3dtictactoe/assets/index-BBXbzXSV.js"></script>
+  </head>
+  <body>
+    <div id="ui">
+      <div id="gameInfo">
+        <h2>3D Tic-Tac-Toe</h2>
+        <p>Player: <span id="currentPlayer">X</span></p>
+        <p>Status: <span id="gameStatus">Your turn</span></p>
+        <button id="resetBtn">Reset Game</button>
+
+        <div style="margin-top: 15px; font-size: 12px; opacity: 0.8">
+          <p><strong>Camera Settings:</strong></p>
+          <label style="display: flex; align-items: center; margin: 5px 0">
+            <input
+              type="checkbox"
+              id="invertHorizontal"
+              style="margin-right: 8px"
+            />
+            Invert Horizontal (Left/Right)
+          </label>
+          <label style="display: flex; align-items: center; margin: 5px 0">
+            <input
+              type="checkbox"
+              id="invertVertical"
+              style="margin-right: 8px"
+            />
+            Invert Vertical (Up/Down)
+          </label>
+        </div>
+
+        <div style="margin-top: 15px; font-size: 12px; opacity: 0.8">
+          <p><strong>Controls:</strong></p>
+          <p><strong>Desktop:</strong></p>
+          <p>• Click and drag to rotate camera</p>
+          <p>• Mouse wheel to zoom in/out</p>
+          <p>• Hover over cells to highlight them</p>
+          <p>• Click on highlighted cells to place pieces</p>
+          <p><strong>Mobile:</strong></p>
+          <p>• Touch and drag to rotate camera</p>
+          <p>• Pinch to zoom in/out</p>
+          <p>• Tap cells to place pieces</p>
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>
