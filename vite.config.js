@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  base: "/3dtictactoe/",
   server: {
     port: 3001,
     open: true,
